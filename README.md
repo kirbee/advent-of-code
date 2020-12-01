@@ -1,0 +1,3 @@
+# Advent of Code
+
+For fun, let's see how many of these I remember to do ...
