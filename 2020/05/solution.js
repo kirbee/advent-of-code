@@ -13,15 +13,8 @@ async function parseSeatsAndFindMissing() {
     crlfDelay: Infinity,
   });
 
-  // Generate all possible seats and their ids
-  const missingSeats = {};
-  for (let i = 0; i < ROW_SIZE; i++) {
-    for (let ii = 0; ii < COL_SIZE; ii++) {
-      missingSeats[i * 8 + ii] = [i, ii];
-    }
-  }
-
   let maxSeatId = 0;
+  let foundSeats = {};
 
   for await (const line of rl) {
     const seat = line;
@@ -59,15 +52,15 @@ async function parseSeatsAndFindMissing() {
       maxSeatId = seatId;
     }
 
-    missingSeats[seatId] = false;
+    foundSeats[seatId] = 1;
   }
 
-  const mySeatId = Object.keys(missingSeats)
-    .filter((id) => missingSeats[id] !== false)
-    .filter((testId) => {
-      const intId = parseInt(testId, 10);
-      return !missingSeats[intId + 1] && !missingSeats[intId - 1];
-    });
+  const theSeatBeforeMine = Object.keys(foundSeats).filter((testId) => {
+    const intId = parseInt(testId, 10);
+    return !foundSeats[intId + 1] && foundSeats[intId + 2];
+  });
+
+  const mySeatId = parseInt(theSeatBeforeMine[0], 10) + 1;
 
   return [maxSeatId, mySeatId];
 }
