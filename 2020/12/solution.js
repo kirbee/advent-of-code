@@ -2,7 +2,7 @@ const fs = require('fs');
 const readline = require('readline');
 
 const [one, two, inputFile] = process.argv;
-const fileName = inputFile || 'input';
+const fileName = inputFile || './input.txt';
 
 class Ship {
   static directions = {
@@ -158,7 +158,7 @@ class WayPointShip extends Ship {
 }
 
 async function parseNavigationInstructions() {
-  const fileStream = fs.createReadStream(`./${fileName}.txt`);
+  const fileStream = fs.createReadStream(fileName);
   const rl = readline.createInterface({
     input: fileStream,
     crlfDelay: Infinity,
