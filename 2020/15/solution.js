@@ -1,28 +1,37 @@
 const input = [11, 18, 0, 20, 1, 7, 16];
-//const input = [2, 3, 1];
-// If that was the first time the number has been spoken, the current player says 0.
-// Otherwise, the number had been spoken before; the current player announces how
-// many turns apart the number is from when it was previously spoken.
-const result = [...input];
-let last = input.slice(-1).pop();
-for (let i = input.length; i < 2020; i++) {
-  let thisTurn = 0;
-  const lastTimeSaid = result
-    .map((item, index) => {
-      if (last === item) {
-        return index;
-      }
-      return null;
-    })
-    .filter((item) => item !== null);
-  // console.log(lastTimeSaid);
-  if (lastTimeSaid.length > 1) {
-    const [timeBefore, last] = lastTimeSaid.slice(-2);
-    thisTurn = last - timeBefore;
-  }
-  last = thisTurn;
-  result.push(thisTurn);
-  // console.log(result);
-}
 
-console.log(result.slice(-1).pop());
+const getNthSpoken = (startingNumbers, n) => {
+  const lastSaid = {};
+
+  const addToLastSaid = (number, turn) => {
+    if (lastSaid[number]) {
+      if (lastSaid[number].length === 2) {
+        const [timeBefore, mostRecent] = lastSaid[number];
+        lastSaid[number] = [mostRecent, turn];
+      } else {
+        lastSaid[number] = [...lastSaid[number], turn];
+      }
+    } else {
+      lastSaid[number] = [turn];
+    }
+  };
+
+  startingNumbers.forEach((item, i) => addToLastSaid(item, i));
+
+  let last = startingNumbers.slice(-1).pop();
+  for (let i = startingNumbers.length; i < n; i++) {
+    let thisTurn = 0;
+    if (lastSaid[last].length == 2) {
+      const [timeBefore, lastTime] = lastSaid[last];
+      thisTurn = lastTime - timeBefore;
+    }
+    addToLastSaid(thisTurn, i);
+    last = thisTurn;
+    if (i % 100000 === 0) console.log(i, last, Object.keys(lastSaid).length);
+  }
+  return last;
+};
+
+console.log('Part 1:', getNthSpoken(input, 2020));
+// This takes forever, presumably because I'm storing a trillion keys in a single object
+console.log('Part 2:', getNthSpoken(input, 30000000));
