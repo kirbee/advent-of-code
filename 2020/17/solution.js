@@ -7,7 +7,7 @@ const fileName = inputFile || './input.txt';
 
 const ACTIVE = '#';
 
-class GridItem {
+class GridItem3D {
   constructor(x, y, z, isActive) {
     this.x = parseInt(x, 10);
     this.y = parseInt(y, 10);
@@ -31,12 +31,66 @@ class GridItem {
     return result;
   }
 
+  getDimensions() {
+    return 3;
+  }
+
   getKey(x, y, z) {
     x = typeof x !== 'number' ? this.x : x;
     y = typeof y !== 'number' ? this.y : y;
     z = typeof z !== 'number' ? this.z : z;
 
     return `${x},${y},${z}`;
+  }
+
+  setIsActive(isActive) {
+    this.isActive = isActive;
+  }
+}
+
+class GridItem4D {
+  constructor(x, y, z, w, isActive) {
+    this.x = parseInt(x, 10);
+    this.y = parseInt(y, 10);
+    this.z = parseInt(z, 10);
+    this.w = parseInt(w, 10);
+    this.isActive = isActive;
+    this.neighbours = this.getNeighbours();
+  }
+
+  getNeighbours() {
+    let result = [];
+    for (let xVal = this.x - 1; xVal < this.x + 2; xVal++) {
+      for (let yVal = this.y - 1; yVal < this.y + 2; yVal++) {
+        for (let zVal = this.z - 1; zVal < this.z + 2; zVal++) {
+          for (let wVal = this.w - 1; wVal < this.w + 2; wVal++) {
+            if (
+              xVal === this.x &&
+              yVal === this.y &&
+              zVal === this.z &&
+              wVal === this.w
+            ) {
+            } else {
+              result.push(this.getKey(xVal, yVal, zVal, wVal));
+            }
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  getDimensions() {
+    return 4;
+  }
+
+  getKey(x, y, z, w) {
+    x = typeof x !== 'number' ? this.x : x;
+    y = typeof y !== 'number' ? this.y : y;
+    z = typeof z !== 'number' ? this.z : z;
+    w = typeof w !== 'number' ? this.w : w;
+
+    return `${x},${y},${z},${w}`;
   }
 
   setIsActive(isActive) {
@@ -72,11 +126,16 @@ const shouldSetActive = (item, activeNeighbours) => {
   }
 };
 
-const createGridItems = (stringArr) => {
+const createGridItems = (stringArr, dimensions = 3) => {
   const result = new Map();
   stringArr.forEach((row, yValue) => {
     row.split('').forEach((item, xValue) => {
-      const gridItem = new GridItem(xValue, yValue, 0, item === ACTIVE);
+      let gridItem;
+      if (dimensions === 4) {
+        gridItem = new GridItem4D(xValue, yValue, 0, 0, item === ACTIVE);
+      } else {
+        gridItem = new GridItem3D(xValue, yValue, 0, item === ACTIVE);
+      }
       result.set(gridItem.getKey(), gridItem);
     });
   });
@@ -98,7 +157,22 @@ const countActiveNeighbours = (item, grid) => {
 };
 
 const getCopy = (gridItem) => {
-  return new GridItem(gridItem.x, gridItem.y, gridItem.z, gridItem.isActive);
+  if (typeof gridItem.w !== 'undefined') {
+    return new GridItem4D(
+      gridItem.x,
+      gridItem.y,
+      gridItem.z,
+      gridItem.w,
+      gridItem.isActive
+    );
+  } else {
+    return new GridItem3D(
+      gridItem.x,
+      gridItem.y,
+      gridItem.z,
+      gridItem.isActive
+    );
+  }
 };
 
 const simulateGrid = (gridItems) => {
@@ -107,7 +181,6 @@ const simulateGrid = (gridItems) => {
   // Add any new items
   gridItems.forEach((gridItem) => {
     const baseActiveNeighbours = countActiveNeighbours(gridItem, gridItems);
-    console.log(shouldSetActive(gridItem, baseActiveNeighbours));
     if (shouldSetActive(gridItem, baseActiveNeighbours)) {
       const newBaseItem = getCopy(gridItem);
       newBaseItem.setIsActive(true);
@@ -116,13 +189,16 @@ const simulateGrid = (gridItems) => {
     gridItem.neighbours.forEach((neighbour) => {
       let neighbourItem;
       if (!gridItems.has(neighbour)) {
-        [x, y, z] = neighbour.split(',');
-        neighbourItem = new GridItem(x, y, z, false);
+        const coordinates = neighbour.split(',');
+        if (coordinates.length === 4) {
+          [x, y, z, w] = coordinates;
+          neighbourItem = new GridItem4D(x, y, z, w, false);
+        } else {
+          [x, y, z] = coordinates;
+          neighbourItem = new GridItem3D(x, y, z, false);
+        }
       } else {
         neighbourItem = gridItems.get(neighbour);
-      }
-      if (neighbourItem.z === 2) {
-        console.log('waht');
       }
       const activeNeighbours = countActiveNeighbours(neighbourItem, gridItems);
       const newItem = getCopy(neighbourItem);
@@ -148,9 +224,11 @@ async function parseMemoryStuff() {
     initialConfig.push(line);
   }
 
-  let grid = createGridItems(initialConfig);
+  let grid3d = createGridItems(initialConfig);
+  let grid4d = createGridItems(initialConfig, 4);
   let numIterations = 0;
-  let newGrid;
+  let newGrid3d;
+  let newGrid4d;
 
   // console.log('here');
   // console.log(countActiveNeighbours(grid.get('0,2,0'), grid));
@@ -159,12 +237,16 @@ async function parseMemoryStuff() {
   // // console.log(grid.get('1,2,0').isActive);
   // grid = simulateGrid(grid);
   while (numIterations <= 5) {
-    newGrid = simulateGrid(grid);
-    grid = newGrid;
+    newGrid3d = simulateGrid(grid3d);
+    grid3d = newGrid3d;
+
+    newGrid4d = simulateGrid(grid4d);
+    grid4d = newGrid4d;
+
     numIterations++;
   }
 
-  console.log(countActive(newGrid));
+  console.log(countActive(grid3d), countActive(grid4d));
 
   return [1, 2];
 }
